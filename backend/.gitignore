@@ -1,6 +1,13 @@
 CLEAN_ARCHITECTURE.md
 venv/
+.venv/
 __pycache__/
-*.pyc
-trello.db
+*.py[cod]
+*.db
+*.sqlite3
 .env
+.env.*
+!.env.example
+.pytest_cache/
+.coverage
+htmlcov/

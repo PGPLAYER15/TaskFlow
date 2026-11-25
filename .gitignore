@@ -1,9 +1,12 @@
-# Dependencies
+# Dependencies & virtual environments
 node_modules/
 venv/
+.venv/
+env/
+ENV/
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*.egg-info/
 
 # Build outputs
 dist/
@@ -13,11 +16,15 @@ build/
 
 # Environment files
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # Database
 *.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
 *.sqlite3
 
 # Logs
@@ -46,13 +53,19 @@ Thumbs.db
 # Docker
 .docker/
 
-# Coverage
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
 coverage/
 .nyc_output/
+.vitest/
 
-# Cache
+# Cache & linters
 .cache/
 .parcel-cache/
+.mypy_cache/
+.ruff_cache/
 
 # Misc
 *.zip
