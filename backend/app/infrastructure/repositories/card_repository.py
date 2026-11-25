@@ -5,6 +5,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.domain.schemas.card import CardCreate, CardUpdate
 from app.domain.entities.card import Card
 from app.domain.entities.tag import Tag
+from app.domain.entities.list import List
+from app.domain.entities.board import Board
 from app.core.exceptions import DatabaseError
 from .base import BaseRepository
 
@@ -19,22 +21,26 @@ class CardRepository(BaseRepository[Card]):
         except SQLAlchemyError as e:
             raise DatabaseError("Error al obtener tarjetas de la lista", e)
 
-    def create_card(self, card_data: CardCreate) -> Card:
+    def create_card(self, card_data: CardCreate, user_id: Optional[int] = None) -> Card:
         try:
             card = Card(
                 title=card_data.title, 
                 list_id=card_data.list_id, 
                 description=card_data.description, 
-                due_date=card_data.due_date
+                due_date=card_data.due_date,
+                position=self.db.query(Card).filter(Card.list_id == card_data.list_id).count()
             ) 
 
-            for tag_name in card_data.tags:
-                tag = self.db.query(Tag).filter(Tag.name == tag_name).first()
-                if tag:
-                    card.tags.append(tag)
-                else:
-                    tag = Tag(name=tag_name)
-                    card.tags.append(tag)
+            existing_tags = self.db.query(Tag).filter(Tag.name.in_(card_data.tags or []), Tag.user_id == user_id).all()
+            
+            existing_tag_names = {tag.name for tag in existing_tags}
+            new_tags = [
+                Tag(name=name, color="#808080", user_id=user_id)
+                for name in (card_data.tags or [])
+                if name not in existing_tag_names
+            ]
+
+            card.tags.extend(existing_tags + new_tags)
             
             self.db.add(card)
             self.db.commit()
@@ -58,11 +64,14 @@ class CardRepository(BaseRepository[Card]):
             self.db.rollback()
             raise DatabaseError("Error al actualizar la tarjeta", e)
 
-    def move_card(self, card_id: int, new_list_id: int) -> Optional[Card]:
+    def move_card(self, card_id: int, new_list_id: int, position: Optional[int] = None) -> Optional[Card]:
         try:
             card = self.get_by_id(card_id)
             if card:
+                if position is None:
+                    position = self.db.query(Card).filter(Card.list_id == new_list_id).count()
                 card.list_id = new_list_id
+                card.position = position
                 self.db.commit()
                 self.db.refresh(card)
             return card
@@ -70,15 +79,21 @@ class CardRepository(BaseRepository[Card]):
             self.db.rollback()
             raise DatabaseError("Error al mover la tarjeta", e)
 
-    def filter_by_tag(self, tag_name: str) -> ListType[Card]:
+    def _owned_by(self, query, user_id: Optional[int]):
+        if user_id is None:
+            return query
+        return query.join(List, Card.list_id == List.id).join(Board, List.board_id == Board.id).filter(Board.user_id == user_id)
+
+    def filter_by_tag(self, tag_name: str, user_id: Optional[int] = None) -> ListType[Card]:
         try:
-            return self.db.query(Card).filter(Card.tags.any(Tag.name.ilike(tag_name))).all()
+            query = self._owned_by(self.db.query(Card), user_id)
+            return query.filter(Card.tags.any(Tag.name.ilike(tag_name))).all()
         except SQLAlchemyError as e:
             raise DatabaseError("Error al filtrar tarjetas por etiqueta", e)
 
-    def search_cards(self, q: Optional[str], tags_ids: list[int], due_before: Optional[datetime], due_after: Optional[datetime]) -> ListType[Card]:
+    def search_cards(self, q: Optional[str], tags_ids: list[int], due_before: Optional[datetime], due_after: Optional[datetime], user_id: Optional[int] = None) -> ListType[Card]:
         try:
-            query = self.db.query(Card)
+            query = self._owned_by(self.db.query(Card), user_id)
             if q:
                 query = query.filter(Card.title.ilike(f'%{q}%'))
             if tags_ids:

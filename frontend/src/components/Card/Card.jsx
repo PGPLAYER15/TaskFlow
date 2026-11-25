@@ -39,9 +39,10 @@ function Card({ board_id, id, title, description, columnaId, check, onDelete, on
     const [isEditing, setIsEditing] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
     
     const openModal = (e) => {
-        e.stopPropagation();
+        e?.stopPropagation();
         setIsModalOpen(true);
         setEditedTitle(title);
         setEditedDescription(description || '');
@@ -112,6 +113,8 @@ function Card({ board_id, id, title, description, columnaId, check, onDelete, on
             ref={setNodeRef} 
             style={style} 
             className={styles.contenedor}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
         >
             <div 
                 className={styles.dragHandle}
@@ -139,6 +142,20 @@ function Card({ board_id, id, title, description, columnaId, check, onDelete, on
                     </span>
                 )}
             </div>
+
+            {isHovered && !isModalOpen && (
+                <button
+                    type="button"
+                    aria-label="Borrar tarjeta"
+                    className={styles.hoverDeleteBtn}
+                    onClick={(e) => {
+                        openModal(e);
+                        setShowDeleteConfirm(true);
+                    }}
+                >
+                    🗑
+                </button>
+            )}
 
             <Modal isOpen={isModalOpen} onClose={closeModal}>
                 <h2>Editar Tarjeta</h2>

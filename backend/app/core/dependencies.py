@@ -74,3 +74,25 @@ def get_card_service(db: Session = Depends(get_db)) -> CardService:
     tag_repo = TagRepository(db)
     card_repo = CardRepository(db)
     return CardService(tag_repo, card_repo)
+
+# --- Autorización: el usuario debe ser dueño del tablero de la ruta ---
+def require_board_owner(
+    board_id: int,
+    board_service: BoardService = Depends(get_board_service),
+    current_user=Depends(get_current_user),
+):
+    if board_service.get_board(board_id) is None:
+        raise HTTPException(status_code=404, detail="Board not found")
+    if not board_service.is_owner(board_id, current_user.id):
+        raise HTTPException(status_code=403, detail="Not authorized to access this board")
+
+
+def require_list_in_board(
+    board_id: int,
+    list_id: int,
+    list_service: ListService = Depends(get_list_service),
+    _owner=Depends(require_board_owner),
+):
+    db_list = list_service.get_list(list_id)
+    if db_list is None or db_list.board_id != board_id:
+        raise HTTPException(status_code=404, detail="Lista no encontrada")

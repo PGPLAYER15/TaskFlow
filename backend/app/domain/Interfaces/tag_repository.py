@@ -9,15 +9,15 @@ class ITagRepository(ABC):
         pass
 
     @abstractmethod
-    def get_by_name(self, name: str) -> Optional[Tag]:
+    def get_by_name(self, name: str, user_id: Optional[int] = None) -> Optional[Tag]:
         pass
 
     @abstractmethod
-    def get_all(self) -> List[Tag]:
+    def get_all(self, user_id: Optional[int] = None) -> List[Tag]:
         pass
 
     @abstractmethod
-    def create_tag(self, tag_data: TagCreate) -> Tag:
+    def create_tag(self, tag_data: TagCreate, user_id: Optional[int] = None) -> Tag:
         pass
         
     @abstractmethod
