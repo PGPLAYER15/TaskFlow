@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
 
 
@@ -23,10 +23,22 @@ class CardUpdate(BaseModel):
     list_id: Optional[int] = None
 
 
+class CardMove(BaseModel):
+    list_id: int
+    position: Optional[int] = None
+
+
 class CardResponse(CardBase):
     id: int
+    list_id: int
+    position: int = 0
     due_date: Optional[datetime] = None
     tags: Optional[list[str]] = []
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def _tag_names(cls, v):
+        return [t if isinstance(t, str) else t.name for t in (v or [])]
 
     class Config:
         from_attributes = True

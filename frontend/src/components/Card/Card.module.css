@@ -340,3 +340,19 @@
     color: #5e6c84;
     text-decoration: line-through;
 }
+
+.hoverDeleteBtn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    border: none;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 2px 6px;
+    z-index: 2;
+}
+
+.hoverDeleteBtn:hover {
+    background: #ffd6d6;
+}

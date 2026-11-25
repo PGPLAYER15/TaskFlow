@@ -13,14 +13,17 @@ class TagRepository(BaseRepository[Tag], ITagRepository):
     def get_by_id(self,tag_id:int) -> Optional[Tag]:
         return self.db.query(Tag).filter(Tag.id == tag_id).first()
     
-    def get_by_name(self, name: str) -> Optional[Tag]:
-        return self.db.query(Tag).filter(Tag.name == name).first()
+    def get_by_name(self, name: str, user_id: Optional[int] = None) -> Optional[Tag]:
+        return self.db.query(Tag).filter(Tag.name == name, Tag.user_id == user_id).first()
     
-    def get_all(self) -> ListType[Tag]:
-        return self.db.query(Tag).all()
+    def get_all(self, user_id: Optional[int] = None) -> ListType[Tag]:
+        query = self.db.query(Tag)
+        if user_id is not None:
+            query = query.filter(Tag.user_id == user_id)
+        return query.all()
     
-    def create_tag(self, tag_data: TagCreate) -> Tag:
-        tag = Tag(name=tag_data.name, color=tag_data.color)
+    def create_tag(self, tag_data: TagCreate, user_id: Optional[int] = None) -> Tag:
+        tag = Tag(name=tag_data.name, color=tag_data.color, user_id=user_id)
         self.db.add(tag)
         self.db.commit()
         self.db.refresh(tag)
@@ -45,9 +48,12 @@ class TagRepository(BaseRepository[Tag], ITagRepository):
         return False
     
     def add_tag_to_card(self, tag_id: int, card_id: int) -> bool:
+        from app.domain.entities.card import Card
         tag = self.get_by_id(tag_id)
-        if tag:
-            tag.cards.append(card_id)
+        card = self.db.query(Card).filter(Card.id == card_id).first()
+        if tag and card:
+            if card not in tag.cards:
+                tag.cards.append(card)
             self.db.commit()
             return True
         return False

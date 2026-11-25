@@ -11,6 +11,7 @@ class Card(Base):
     title = Column(String(100), nullable=False)
     description = Column(String(500), nullable=True)
     list_id = Column(Integer, ForeignKey("lists.id"))
+    position = Column(Integer, nullable=False, default=0)
     check = Column(Boolean, nullable=False, default=False)
     due_date = Column(DateTime, nullable=True)
 
